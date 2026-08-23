@@ -1,0 +1,15 @@
+target/
+*.class
+
+.idea/
+*.iml
+
+venv/
+__pycache__/
+*.pyc
+
+.env
+application.yml
+chroma_data/
+*.log
+.DS_Store
