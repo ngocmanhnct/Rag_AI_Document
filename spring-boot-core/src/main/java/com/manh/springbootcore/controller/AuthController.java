@@ -7,6 +7,8 @@ import com.manh.springbootcore.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import com.manh.springbootcore.entity.User;
 
 @RestController
 @RequestMapping("/auth")
@@ -23,5 +25,9 @@ public class AuthController {
     @PostMapping("/login")
     public AuthResponse login(@Valid @RequestBody LoginRequest request) {
         return authService.login(request);
+    }
+    @GetMapping("/me")
+    public String me(@AuthenticationPrincipal User user) {
+        return "Xin chào " + user.getFullName() + ", email: " + user.getEmail();
     }
 }
