@@ -8,6 +8,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/documents")
 @RequiredArgsConstructor
@@ -19,5 +21,9 @@ public class DocumentController {
     public DocumentResponse upload(@AuthenticationPrincipal User currentUser,
                                    @RequestParam("file") MultipartFile file) {
         return documentService.upload(currentUser, file);
+    }
+    @GetMapping
+    public List<DocumentResponse> list(@AuthenticationPrincipal User currentUser) {
+        return documentService.listMyDocuments(currentUser);
     }
 }

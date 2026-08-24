@@ -13,6 +13,8 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class DocumentService {
@@ -48,5 +50,15 @@ public class DocumentService {
                 .chunksIndexed(document.getChunksIndexed())
                 .uploadedAt(document.getUploadedAt())
                 .build();
+    }
+    public List<DocumentResponse> listMyDocuments(User owner) {
+        return documentRepository.findByOwner(owner).stream()
+                .map(doc -> DocumentResponse.builder()
+                        .id(doc.getId())
+                        .filename(doc.getFilename())
+                        .chunksIndexed(doc.getChunksIndexed())
+                        .uploadedAt(doc.getUploadedAt())
+                        .build())
+                .toList();
     }
 }
