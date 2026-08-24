@@ -1,6 +1,7 @@
 package com.manh.springbootcore.controller;
 
 import com.manh.springbootcore.dto.request.ChatRequest;
+import com.manh.springbootcore.dto.response.ChatHistoryResponse;
 import com.manh.springbootcore.dto.response.ChatResponse;
 import com.manh.springbootcore.entity.User;
 import com.manh.springbootcore.service.ChatService;
@@ -8,6 +9,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/chat")
@@ -20,5 +23,9 @@ public class ChatController {
     public ChatResponse chat(@AuthenticationPrincipal User currentUser,
                              @Valid @RequestBody ChatRequest request) {
         return chatService.chat(currentUser, request);
+    }
+    @GetMapping("/history")
+    public List<ChatHistoryResponse> history(@AuthenticationPrincipal User currentUser) {
+        return chatService.getHistory(currentUser);
     }
 }
