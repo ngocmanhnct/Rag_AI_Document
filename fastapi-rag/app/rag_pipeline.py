@@ -147,3 +147,5 @@ def generate_answer(query: str, context_chunks: List[Dict]) -> str:
 
 def new_document_id() -> str:
     return str(uuid.uuid4())
+def delete_document(document_id: str) -> None:
+    _collection.delete(where={"document_id": document_id})

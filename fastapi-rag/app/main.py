@@ -82,3 +82,9 @@ def chat(req: ChatRequest):
             for c in context_chunks
         ],
     )
+from app.rag_pipeline import index_document, retrieve_context, generate_answer, new_document_id, delete_document
+
+@app.delete("/documents/{document_id}")
+def delete_document_endpoint(document_id: str):
+    delete_document(document_id)
+    return {"status": "deleted", "document_id": document_id}
