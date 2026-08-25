@@ -5,7 +5,7 @@ import tempfile
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-
+from app.rag_pipeline import index_document, retrieve_context, generate_answer, generate_answer_stream, new_document_id, delete_document
 from app.rag_pipeline import index_document, retrieve_context, generate_answer, new_document_id
 
 app = FastAPI(title="RAG Assistant Service")
@@ -88,3 +88,19 @@ from app.rag_pipeline import index_document, retrieve_context, generate_answer, 
 def delete_document_endpoint(document_id: str):
     delete_document(document_id)
     return {"status": "deleted", "document_id": document_id}
+
+from fastapi.responses import StreamingResponse
+
+def format_sse(data: str) -> str:
+    return f"data: {data}\n\n"
+
+@app.get("/chat/stream")
+def chat_stream(query: str, top_k: int = 4):
+    context_chunks = retrieve_context(query, top_k=top_k)
+
+    def event_generator():
+        for token in generate_answer_stream(query, context_chunks):
+            yield format_sse(token)
+        yield format_sse("[DONE]")
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")

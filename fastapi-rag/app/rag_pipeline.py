@@ -149,3 +149,29 @@ def new_document_id() -> str:
     return str(uuid.uuid4())
 def delete_document(document_id: str) -> None:
     _collection.delete(where={"document_id": document_id})
+
+def generate_answer_stream(query: str, context_chunks: List[Dict]):
+    """
+    Giống generate_answer(), nhưng yield từng mẩu chữ thay vì trả 1 cục.
+    """
+    api_key = os.getenv("OPENAI_API_KEY")
+    prompt = build_prompt(query, context_chunks)
+
+    if not api_key:
+        yield "[Chưa cấu hình OPENAI_API_KEY - không thể streaming]"
+        return
+
+    from openai import OpenAI
+    client = OpenAI(api_key=api_key)
+
+    stream = client.chat.completions.create(
+        model=os.getenv("LLM_MODEL", "gpt-4o-mini"),
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.2,
+        stream=True,
+    )
+
+    for chunk in stream:
+        delta = chunk.choices[0].delta.content
+        if delta:
+            yield delta

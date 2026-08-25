@@ -13,9 +13,13 @@ import com.manh.springbootcore.entity.ChatMessage;
 import com.manh.springbootcore.entity.User;
 import com.manh.springbootcore.repository.ChatMessageRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.io.IOException;
 import java.util.List;
 
 @Service
@@ -47,6 +51,35 @@ public class ChatService {
                 .build();
     }
 
+    public SseEmitter chatStream(User currentUser, String query) {
+        SseEmitter emitter = new SseEmitter(60_000L);
+        StringBuilder fullAnswer = new StringBuilder();
+
+        ragServiceWebClient.get()
+                .uri(uriBuilder -> uriBuilder.path("/chat/stream").queryParam("query", query).build())
+                .retrieve()
+                .bodyToFlux(new ParameterizedTypeReference<ServerSentEvent<String>>() {})
+                .subscribe(
+                        event -> {
+                            try {
+                                String data = event.data();
+                                if ("[DONE]".equals(data)) {
+                                    emitter.complete();
+                                } else {
+                                    fullAnswer.append(data);
+                                    emitter.send(data);
+                                }
+                            } catch (IOException e) {
+                                emitter.completeWithError(e);
+                            }
+                        },
+                        emitter::completeWithError,
+                        () -> saveHistoryPlain(currentUser, query, fullAnswer.toString())
+                );
+
+        return emitter;
+    }
+
     public List<ChatHistoryResponse> getHistory(User owner) {
         return chatMessageRepository.findByOwnerOrderByCreatedAtDesc(owner).stream()
                 .map(this::toHistoryResponse)
@@ -64,8 +97,21 @@ public class ChatService {
                     .build();
             chatMessageRepository.save(message);
         } catch (JacksonException e) {
-            // Cố ý nuốt lỗi ở đây: không để việc lưu lịch sử thất bại
-            // làm hỏng luôn câu trả lời chính đang trả về cho client
+            // Cố ý nuốt lỗi: không để việc lưu lịch sử làm hỏng câu trả lời chính
+        }
+    }
+
+    private void saveHistoryPlain(User owner, String query, String answer) {
+        try {
+            ChatMessage message = ChatMessage.builder()
+                    .query(query)
+                    .answer(answer)
+                    .sourcesJson("[]")
+                    .owner(owner)
+                    .build();
+            chatMessageRepository.save(message);
+        } catch (Exception e) {
+            // tương tự - không làm gián đoạn stream vì lỗi lưu lịch sử
         }
     }
 
