@@ -1,11 +1,10 @@
 package com.manh.springbootcore.service;
 
-import com.manh.springbootcore.dto.request.ChangePasswordRequest;
-import com.manh.springbootcore.dto.request.UpdateProfileRequest;
+import com.manh.springbootcore.dto.request.*;
 import com.manh.springbootcore.dto.response.AuthResponse;
-import com.manh.springbootcore.dto.request.LoginRequest;
-import com.manh.springbootcore.dto.request.RegisterRequest;
+import com.manh.springbootcore.dto.response.TokenRefreshResponse;
 import com.manh.springbootcore.dto.response.UserProfileResponse;
+import com.manh.springbootcore.entity.RefreshToken;
 import com.manh.springbootcore.entity.User;
 import com.manh.springbootcore.repository.UserRepository;
 import com.manh.springbootcore.security.JwtUtil;
@@ -26,6 +25,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
+    private final RefreshTokenService refreshTokenService;
 
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
@@ -40,13 +40,7 @@ public class AuthService {
 
         userRepository.save(user);
 
-        String token = jwtUtil.generateToken(user.getEmail());
-
-        return AuthResponse.builder()
-                .token(token)
-                .email(user.getEmail())
-                .fullName(user.getFullName())
-                .build();
+        return buildAuthResponse(user);
     }
 
     public AuthResponse login(LoginRequest request) {
@@ -61,22 +55,29 @@ public class AuthService {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Sai email hoặc mật khẩu"));
 
-        String token = jwtUtil.generateToken(user.getEmail());
+        return buildAuthResponse(user);
+    }
 
-        return AuthResponse.builder()
-                .token(token)
-                .email(user.getEmail())
-                .fullName(user.getFullName())
+    public TokenRefreshResponse refreshToken(RefreshTokenRequest request) {
+        RefreshToken refreshToken = refreshTokenService.findByToken(request.getRefreshToken());
+        refreshTokenService.verifyExpiration(refreshToken);
+
+        String newAccessToken = jwtUtil.generateToken(refreshToken.getUser().getEmail());
+
+        return TokenRefreshResponse.builder()
+                .token(newAccessToken)
+                .refreshToken(refreshToken.getToken())
                 .build();
     }
+
     public void changePassword(User currentUser, ChangePasswordRequest request) {
         if (!passwordEncoder.matches(request.getCurrentPassword(), currentUser.getPassword())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mật khẩu hiện tại không đúng");
         }
-
         currentUser.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(currentUser);
     }
+
     public UserProfileResponse updateProfile(User currentUser, UpdateProfileRequest request) {
         currentUser.setFullName(request.getFullName());
         userRepository.save(currentUser);
@@ -84,6 +85,18 @@ public class AuthService {
         return UserProfileResponse.builder()
                 .email(currentUser.getEmail())
                 .fullName(currentUser.getFullName())
+                .build();
+    }
+
+    private AuthResponse buildAuthResponse(User user) {
+        String accessToken = jwtUtil.generateToken(user.getEmail());
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
+
+        return AuthResponse.builder()
+                .token(accessToken)
+                .refreshToken(refreshToken.getToken())
+                .email(user.getEmail())
+                .fullName(user.getFullName())
                 .build();
     }
 }

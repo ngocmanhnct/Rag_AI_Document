@@ -1,10 +1,8 @@
 package com.manh.springbootcore.controller;
 
-import com.manh.springbootcore.dto.request.ChangePasswordRequest;
-import com.manh.springbootcore.dto.request.UpdateProfileRequest;
+import com.manh.springbootcore.dto.request.*;
 import com.manh.springbootcore.dto.response.AuthResponse;
-import com.manh.springbootcore.dto.request.LoginRequest;
-import com.manh.springbootcore.dto.request.RegisterRequest;
+import com.manh.springbootcore.dto.response.TokenRefreshResponse;
 import com.manh.springbootcore.dto.response.UserProfileResponse;
 import com.manh.springbootcore.service.AuthService;
 import jakarta.validation.Valid;
@@ -42,5 +40,9 @@ public class AuthController {
     public UserProfileResponse updateProfile(@AuthenticationPrincipal User currentUser,
                                              @Valid @RequestBody UpdateProfileRequest request) {
         return authService.updateProfile(currentUser, request);
+    }
+    @PostMapping("/refresh-token")
+    public TokenRefreshResponse refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
+        return authService.refreshToken(request);
     }
 }

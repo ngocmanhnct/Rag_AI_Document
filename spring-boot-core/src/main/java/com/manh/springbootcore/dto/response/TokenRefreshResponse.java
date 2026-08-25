@@ -4,9 +4,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 @Getter @Builder
-public class AuthResponse {
+public class TokenRefreshResponse {
     private String token;
     private String refreshToken;
-    private String email;
-    private String fullName;
 }
