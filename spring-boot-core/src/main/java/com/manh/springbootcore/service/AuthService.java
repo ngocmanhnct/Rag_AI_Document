@@ -1,8 +1,11 @@
 package com.manh.springbootcore.service;
 
+import com.manh.springbootcore.dto.request.ChangePasswordRequest;
+import com.manh.springbootcore.dto.request.UpdateProfileRequest;
 import com.manh.springbootcore.dto.response.AuthResponse;
 import com.manh.springbootcore.dto.request.LoginRequest;
 import com.manh.springbootcore.dto.request.RegisterRequest;
+import com.manh.springbootcore.dto.response.UserProfileResponse;
 import com.manh.springbootcore.entity.User;
 import com.manh.springbootcore.repository.UserRepository;
 import com.manh.springbootcore.security.JwtUtil;
@@ -64,6 +67,23 @@ public class AuthService {
                 .token(token)
                 .email(user.getEmail())
                 .fullName(user.getFullName())
+                .build();
+    }
+    public void changePassword(User currentUser, ChangePasswordRequest request) {
+        if (!passwordEncoder.matches(request.getCurrentPassword(), currentUser.getPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mật khẩu hiện tại không đúng");
+        }
+
+        currentUser.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(currentUser);
+    }
+    public UserProfileResponse updateProfile(User currentUser, UpdateProfileRequest request) {
+        currentUser.setFullName(request.getFullName());
+        userRepository.save(currentUser);
+
+        return UserProfileResponse.builder()
+                .email(currentUser.getEmail())
+                .fullName(currentUser.getFullName())
                 .build();
     }
 }

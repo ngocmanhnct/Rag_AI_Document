@@ -26,4 +26,8 @@ public class DocumentController {
     public List<DocumentResponse> list(@AuthenticationPrincipal User currentUser) {
         return documentService.listMyDocuments(currentUser);
     }
+    @DeleteMapping("/{id}")
+    public void delete(@AuthenticationPrincipal User currentUser, @PathVariable Long id) {
+        documentService.delete(currentUser, id);
+    }
 }

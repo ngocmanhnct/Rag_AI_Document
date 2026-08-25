@@ -6,12 +6,14 @@ import com.manh.springbootcore.entity.Document;
 import com.manh.springbootcore.entity.User;
 import com.manh.springbootcore.repository.DocumentRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -60,5 +62,18 @@ public class DocumentService {
                         .uploadedAt(doc.getUploadedAt())
                         .build())
                 .toList();
+    }
+    public void delete(User owner, Long documentId) {
+        Document document = documentRepository.findByIdAndOwner(documentId, owner)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Không tìm thấy tài liệu hoặc bạn không có quyền xóa"));
+
+        ragServiceWebClient.delete()
+                .uri("/documents/{id}", document.getVectorDocumentId())
+                .retrieve()
+                .toBodilessEntity()
+                .block();
+
+        documentRepository.delete(document);
     }
 }
