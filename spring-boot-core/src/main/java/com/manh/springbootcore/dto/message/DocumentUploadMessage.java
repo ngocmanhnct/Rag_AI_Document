@@ -1,0 +1,14 @@
+package com.manh.springbootcore.dto.message;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
+public class DocumentUploadMessage {
+    private Long documentId;
+    private String filename;
+    private byte[] fileContent;
+}

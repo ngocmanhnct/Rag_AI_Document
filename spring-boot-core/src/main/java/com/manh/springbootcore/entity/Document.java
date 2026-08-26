@@ -18,11 +18,14 @@ public class Document {
     @Column(nullable = false)
     private String filename;
 
-    // ID mà FastAPI trả về sau khi index thành công - dùng để tra cứu lại vector store sau này
-    @Column(name = "vector_document_id", nullable = false)
-    private String vectorDocumentId;
+    @Column(name = "vector_document_id")
+    private String vectorDocumentId; // giờ CÓ THỂ null lúc mới tạo, chỉ có giá trị sau khi xử lý xong
 
     private Integer chunksIndexed;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private DocumentStatus status;
 
     @CreationTimestamp
     private LocalDateTime uploadedAt;
