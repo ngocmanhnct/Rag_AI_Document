@@ -25,7 +25,12 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
     restart: unless-stopped
-
+  redis:
+    image: redis:7-alpine
+    container_name: rag-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
   # spring-boot-core:
   #   build: ./spring-boot-core
   #   container_name: spring-boot-core

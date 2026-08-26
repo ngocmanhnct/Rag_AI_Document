@@ -18,7 +18,7 @@ import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-
+import org.springframework.cache.annotation.Cacheable;
 import java.io.IOException;
 import java.util.List;
 
@@ -29,7 +29,7 @@ public class ChatService {
     private final WebClient ragServiceWebClient;
     private final ChatMessageRepository chatMessageRepository;
     private final ObjectMapper objectMapper;
-
+    @Cacheable(value = "chatAnswers", key = "#request.query")
     public ChatResponse chat(User currentUser, ChatRequest request) {
         FastApiChatRequest fastApiRequest = FastApiChatRequest.builder()
                 .query(request.getQuery())
