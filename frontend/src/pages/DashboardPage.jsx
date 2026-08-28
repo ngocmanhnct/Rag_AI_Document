@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { listDocuments, uploadDocument, deleteDocument } from '../api/documents';
 import DocumentCard from '../components/DocumentCard';
-
+import { Link } from 'react-router-dom';
 export default function DashboardPage() {
   const { user, logout } = useAuth();
   const [documents, setDocuments] = useState([]);
@@ -74,7 +74,7 @@ export default function DashboardPage() {
           <button onClick={logout} className="font-mono text-xs text-stamp underline">Đăng xuất</button>
         </div>
       </header>
-
+      <Link to="/chat" className="font-mono text-xs text-ink underline">Vào phòng hỏi đáp →</Link>
       <main className="p-8">
         <div className="flex justify-between items-center mb-6">
           <p className="font-mono text-xs text-ink-light">{documents.length} tài liệu</p>
