@@ -1,0 +1,10 @@
+[
+  {
+    "query": "Tài liệu này nói về chủ đề gì?",
+    "expected_keywords": []
+  },
+  {
+    "query": "Tóm tắt ý chính của tài liệu trong 2-3 câu.",
+    "expected_keywords": []
+  }
+]
