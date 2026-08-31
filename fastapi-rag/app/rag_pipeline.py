@@ -7,10 +7,12 @@ Core RAG pipeline.
 """
 
 import os
+import re
 import uuid
 from typing import List, Dict
 
 import chromadb
+import numpy as np
 from chromadb.utils import embedding_functions
 from pypdf import PdfReader
 
@@ -60,33 +62,91 @@ def chunk_text(text: str, chunk_size: int = 800, overlap: int = 150) -> List[str
     return chunks
 
 
+def _split_sentences(text: str) -> List[str]:
+    """Tách câu bằng regex đơn giản (đủ dùng để so sánh 2 chiến lược chunking,
+    không cần thư viện NLP nặng)."""
+    text = re.sub(r"\s+", " ", text).strip()
+    if not text:
+        return []
+    sentences = re.split(r"(?<=[.!?])\s+", text)
+    return [s.strip() for s in sentences if s.strip()]
+
+
+def semantic_chunk_text(
+    text: str,
+    similarity_threshold: float = 0.6,
+    max_chunk_sentences: int = 8,
+    min_chunk_sentences: int = 2,
+) -> List[str]:
+    """
+    Semantic chunking: gộp các câu liên tiếp có embedding tương đồng cao (cosine
+    similarity) vào cùng 1 chunk, mở chunk mới khi độ tương đồng giữa 2 câu liền kề
+    tụt dưới ngưỡng hoặc chunk đã đủ dài. Dùng để so sánh với chunk_text()
+    (fixed-size) trong phần đánh giá của báo cáo.
+    """
+    sentences = _split_sentences(text)
+    if len(sentences) <= 1:
+        return sentences
+
+    embeddings = np.array(_embedding_fn(sentences))
+    norms = np.linalg.norm(embeddings, axis=1, keepdims=True)
+    norms[norms == 0] = 1e-8
+    normalized = embeddings / norms
+
+    def flush(buf: List[str]):
+        if len(buf) < min_chunk_sentences and chunks:
+            chunks[-1] = chunks[-1] + " " + " ".join(buf)
+        else:
+            chunks.append(" ".join(buf))
+
+    chunks: List[str] = []
+    current = [sentences[0]]
+    for i in range(1, len(sentences)):
+        sim = float(np.dot(normalized[i], normalized[i - 1]))
+        if sim < similarity_threshold or len(current) >= max_chunk_sentences:
+            flush(current)
+            current = [sentences[i]]
+        else:
+            current.append(sentences[i])
+    flush(current)
+    return chunks
+
+
 # ---------- 2. Lưu vào vector store ----------
 
-def index_document(document_id: str, file_path: str, filename: str) -> int:
-    """
-    Đọc PDF -> chunk -> embed -> lưu vào Chroma.
-    Trả về số lượng chunk đã lưu.
-    """
-    text = extract_text_from_pdf(file_path)
-    chunks = chunk_text(text)
-
+def index_chunks(document_id: str, filename: str, chunks: List[str], collection=None) -> int:
+    """Embed + lưu 1 danh sách chunk đã cắt sẵn vào 1 collection (mặc định là
+    collection chính của app; eval script truyền collection riêng để không đụng
+    dữ liệu thật)."""
     if not chunks:
         return 0
 
+    coll = collection if collection is not None else _collection
     ids = [f"{document_id}-{i}" for i in range(len(chunks))]
     metadatas = [
         {"document_id": document_id, "filename": filename, "chunk_index": i}
         for i in range(len(chunks))
     ]
 
-    _collection.add(documents=chunks, ids=ids, metadatas=metadatas)
+    coll.add(documents=chunks, ids=ids, metadatas=metadatas)
     return len(chunks)
+
+
+def index_document(document_id: str, file_path: str, filename: str) -> int:
+    """
+    Đọc PDF -> chunk (fixed-size) -> embed -> lưu vào Chroma.
+    Trả về số lượng chunk đã lưu.
+    """
+    text = extract_text_from_pdf(file_path)
+    chunks = chunk_text(text)
+    return index_chunks(document_id, filename, chunks)
 
 
 # ---------- 3. Truy xuất (retrieve) ----------
 
-def retrieve_context(query: str, top_k: int = 4) -> List[Dict]:
-    results = _collection.query(query_texts=[query], n_results=top_k)
+def retrieve_context(query: str, top_k: int = 4, collection=None) -> List[Dict]:
+    coll = collection if collection is not None else _collection
+    results = coll.query(query_texts=[query], n_results=top_k)
 
     hits = []
     docs = results.get("documents", [[]])[0]
@@ -147,8 +207,11 @@ def generate_answer(query: str, context_chunks: List[Dict]) -> str:
 
 def new_document_id() -> str:
     return str(uuid.uuid4())
+
+
 def delete_document(document_id: str) -> None:
     _collection.delete(where={"document_id": document_id})
+
 
 def generate_answer_stream(query: str, context_chunks: List[Dict]):
     """
