@@ -35,7 +35,7 @@ def extract_text_from_pdf(file_path: str) -> str:
     reader = PdfReader(file_path)
     text_parts = []
     for page in reader.pages:
-        text_parts.append(page.extract_text() or "")
+        text_parts.append(page.extract_text(extraction_mode="layout") or "")
     return "\n".join(text_parts)
 
 
