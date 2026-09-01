@@ -1,0 +1,42 @@
+[
+  {
+    "query": "RAG là gì và gồm những thành phần chính nào?",
+    "expected_filename": "rag_overview.txt"
+  },
+  {
+    "query": "Tại sao RAG giúp giảm hiện tượng ảo giác của mô hình ngôn ngữ?",
+    "expected_filename": "rag_overview.txt"
+  },
+  {
+    "query": "So với việc fine-tune mô hình, RAG có ưu điểm gì về chi phí?",
+    "expected_filename": "rag_overview.txt"
+  },
+  {
+    "query": "Tại sao cần chia nhỏ văn bản thành chunk trước khi embedding?",
+    "expected_filename": "chunking_strategies.txt"
+  },
+  {
+    "query": "Fixed-size chunking hoạt động như thế nào và có nhược điểm gì?",
+    "expected_filename": "chunking_strategies.txt"
+  },
+  {
+    "query": "Semantic chunking xác định ranh giới giữa các chunk dựa trên tiêu chí nào?",
+    "expected_filename": "chunking_strategies.txt"
+  },
+  {
+    "query": "Khi nào nên chọn semantic chunking thay vì fixed-size chunking?",
+    "expected_filename": "chunking_strategies.txt"
+  },
+  {
+    "query": "Embedding là gì và độ tương đồng giữa 2 embedding được đo bằng gì?",
+    "expected_filename": "embeddings_vectordb.txt"
+  },
+  {
+    "query": "Vector database khác gì so với cơ sở dữ liệu quan hệ truyền thống?",
+    "expected_filename": "embeddings_vectordb.txt"
+  },
+  {
+    "query": "ChromaDB có đặc điểm gì phù hợp cho giai đoạn proof-of-concept?",
+    "expected_filename": "embeddings_vectordb.txt"
+  }
+]

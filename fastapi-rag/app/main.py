@@ -4,9 +4,17 @@ import tempfile
 
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from app.rag_pipeline import index_document, retrieve_context, generate_answer, generate_answer_stream, new_document_id, delete_document
-from app.rag_pipeline import index_document, retrieve_context, generate_answer, new_document_id
+
+from app.rag_pipeline import (
+    index_document,
+    retrieve_context,
+    generate_answer,
+    generate_answer_stream,
+    new_document_id,
+    delete_document,
+)
 
 app = FastAPI(title="RAG Assistant Service")
 
@@ -27,6 +35,10 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     answer: str
     sources: list
+
+
+def format_sse(data: str) -> str:
+    return f"data: {data}\n\n"
 
 
 @app.get("/health")
@@ -60,6 +72,12 @@ async def upload_document(file: UploadFile = File(...)):
     }
 
 
+@app.delete("/documents/{document_id}")
+def delete_document_endpoint(document_id: str):
+    delete_document(document_id)
+    return {"status": "deleted", "document_id": document_id}
+
+
 @app.post("/chat", response_model=ChatResponse)
 def chat(req: ChatRequest):
     if not req.query.strip():
@@ -82,17 +100,7 @@ def chat(req: ChatRequest):
             for c in context_chunks
         ],
     )
-from app.rag_pipeline import index_document, retrieve_context, generate_answer, new_document_id, delete_document
 
-@app.delete("/documents/{document_id}")
-def delete_document_endpoint(document_id: str):
-    delete_document(document_id)
-    return {"status": "deleted", "document_id": document_id}
-
-from fastapi.responses import StreamingResponse
-
-def format_sse(data: str) -> str:
-    return f"data: {data}\n\n"
 
 @app.get("/chat/stream")
 def chat_stream(query: str, top_k: int = 4):
